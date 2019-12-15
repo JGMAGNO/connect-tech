@@ -119,6 +119,8 @@
           }
         });    
     $("button").click(function (e){
+        setTimeout(function(){ $("button").css("background","#00dc00"); }, 0);
+        setTimeout(function(){ $("button").css("background","#ddddde"); }, 400);
         var toastHTML = '<span>Captured!</span><a href="google.com" class="btn-flat toast-action">View</a>';
         M.toast({html: toastHTML});        
         $.getJSON('/capture_image',

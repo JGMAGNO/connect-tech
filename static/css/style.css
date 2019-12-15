@@ -68,6 +68,7 @@ footer.page-footer {
   top: 50px;
   margin-left: 60px;
   transition: all .25s linear;
+  text-decoration: none;
 }
 .toggle .slide {
   color: #818283;
@@ -130,6 +131,7 @@ button {
   border: none;
   background-color: #ddddde;
   margin-top: 50px;
+  text-decoration: none;
 }
 
 button i {
@@ -143,7 +145,7 @@ button:hover{
 }
 
 button:active{
-  background: #00dc00;
+  background: #00dc00;  
 }
 
 img{
