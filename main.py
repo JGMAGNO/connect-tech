@@ -219,6 +219,16 @@ def d_unlock():
     lcd_string("Unlocked!", 2)
     return("Nothing")
 
+@app.route('/returncp')
+def return_cp():
+    return dest
+
+@app.route('/setcp/<name>')
+def set_cp(name):
+    global dest
+    dest = name
+    return dest
+
 @app.route("/")
 def index_page():
     return render_template('index.html')

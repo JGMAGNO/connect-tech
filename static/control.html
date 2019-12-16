@@ -54,6 +54,16 @@
 
   </div>
 
+  <div class="row">
+    <div class="col s12">
+        <div class="input-field col s8" style="margin-left: 60px;">
+          <i class="material-icons prefix cp_set" style="color: #00dc00">perm_phone_msg</i>
+          <input placeholder="639#########" id="cp_num" type="number" class="validate cp_num">
+          <label for="cp_num">Cp number to receive alerts</label>
+        </div> 
+    </div>   
+  </div>
+
   </div>
   <div id="test-swipe-2" class="col">Test 2</div>
   <div id="test-swipe-3" class="col">Test 3</div>  
@@ -105,6 +115,11 @@
     $('.tabs').tabs({
     'swipeable': true,
     });
+    $.getJSON('/returncp',
+        function(data) {
+          $('input[type=number].cp_num').val(data);
+        }
+    );
     $('.toggle').on('click', function() {
           if ($(this).hasClass('on')) {
              M.toast({html: 'Locked!'})
@@ -117,7 +132,17 @@
                 $.getJSON('/unlock',
                     function(data) {});             
           }
-        });    
+        });   
+
+    $('.cp_set').on('click', function() {
+        var bla = $('.cp_num').val();
+        $.getJSON('/setcp/' + bla,
+            function(data) {
+            }
+        );
+        M.toast({html: 'Cellphone number has been set.'})        
+    });   
+
     $("button").click(function (e){
         setTimeout(function(){ $("button").css("background","#00dc00"); }, 0);
         setTimeout(function(){ $("button").css("background","#ddddde"); }, 400);
