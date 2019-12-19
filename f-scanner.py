@@ -204,3 +204,9 @@ while True:
             print("Deleted")
         else:
             print("Failed to delete")
+
+    if c == 'h':
+        if finger.delete_model(get_num()) == adafruit_fingerprint.OK:
+            print("Deleted!")
+        else:
+            print("Failed to delete")

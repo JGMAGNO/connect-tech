@@ -21,7 +21,7 @@ from threading import Thread
 app = Flask(__name__)
 
 stop_run = False
-
+stop_threads = False
 # Digital pin for the relay
 channel = 21
 
@@ -115,9 +115,77 @@ def readBLOB(emp_id, photo, video):
     except TypeError as e:
         print(e)
 
+def enroll_finger(location):
+    """Take a 2 finger images and template it, then store in 'location'"""
+    for fingerimg in range(1, 3):
+        if fingerimg == 1:
+            print("Place finger on sensor...", end="", flush=True)
+        else:
+            print("Place same finger again...", end="", flush=True)
+
+        while True:
+            i = finger.get_image()
+            if i == adafruit_fingerprint.OK:
+                print("Image taken")
+                break
+            elif i == adafruit_fingerprint.NOFINGER:
+                print(".", end="", flush=True)
+            elif i == adafruit_fingerprint.IMAGEFAIL:
+                print("Imaging error")
+                return False
+            else:
+                print("Other error")
+                return False
+
+        print("Templating...", end="", flush=True)
+        i = finger.image_2_tz(fingerimg)
+        if i == adafruit_fingerprint.OK:
+            print("Templated")
+        else:
+            if i == adafruit_fingerprint.IMAGEMESS:
+                print("Image too messy")
+            elif i == adafruit_fingerprint.FEATUREFAIL:
+                print("Could not identify features")
+            elif i == adafruit_fingerprint.INVALIDIMAGE:
+                print("Image invalid")
+            else:
+                print("Other error")
+            return False
+
+        if fingerimg == 1:
+            print("Remove finger")
+            time.sleep(1)
+            while i != adafruit_fingerprint.NOFINGER:
+                i = finger.get_image()
+
+    print("Creating model...", end="", flush=True)
+    i = finger.create_model()
+    if i == adafruit_fingerprint.OK:
+        print("Created")
+    else:
+        if i == adafruit_fingerprint.ENROLLMISMATCH:
+            print("Prints did not match")
+        else:
+            print("Other error")
+        return False
+
+    print("Storing model #%d..." % location, end="", flush=True)
+    i = finger.store_model(location)
+    if i == adafruit_fingerprint.OK:
+        print("Stored")
+    else:
+        if i == adafruit_fingerprint.BADLOCATION:
+            print("Bad storage location")
+        elif i == adafruit_fingerprint.FLASHERR:
+            print("Flash storage error")
+        else:
+            print("Other error")
+        return False
+
+    return True
+
 def get_fingerprint():
     capture_data()
-    print(i)
     lcd_clear()
     lcd_string("Waiting", 2) 
     lcd_string("for image.", 3) 
@@ -131,6 +199,10 @@ def get_fingerprint():
     lcd_string("for image...", 3)     
     print("Waiting for image...")
     while finger.get_image() != adafruit_fingerprint.OK:
+        global stop_threads
+        if stop_threads:
+            return False
+        print("checker")
         pass
     print("Templating...")
     if finger.image_2_tz(1) != adafruit_fingerprint.OK:
@@ -187,22 +259,29 @@ def manual_run():
 @app.route("/stop", methods=['GET'])
 def set_stop_run():
     global stop_run
+    global stop_threads
     stop_run = True
+    stop_threads = True
     return "Application stopped"
 
 @app.route("/run", methods=['GET'])
 def run_process():
     global stop_run
+    global stop_threads
     stop_run = False
+    stop_threads = False
     return Response(manual_run(), mimetype="text/html")
 
 @app.route('/add_finger')
 def add_finger():
+    #enroll_finger(len(finger.templates) + 1)
+    print(len(finger.templates))
     return("Nothing")
 
 
 @app.route('/del_finger')
 def del_finger():
+    print(len(finger.templates))
     print("Please enter the fingerprint to be deleted")
     if get_fingerprint():
         finger.delete_model(finger.finger_id)
