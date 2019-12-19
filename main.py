@@ -11,13 +11,16 @@ import adafruit_fingerprint
 from time import sleep
 from picamera import PiCamera
 from sim800l import SIM800L
-from flask import Flask
+from flask import Flask, Response
 from flask import render_template
 from multiprocessing import Process, Value
+from flask_cors import CORS
+from threading import Thread
 
 # creates a Flask application, named app
 app = Flask(__name__)
 
+stop_run = False
 
 # Digital pin for the relay
 channel = 21
@@ -36,8 +39,8 @@ lcd = lcddriver.lcd()
 lcd.lcd_clear()
 
 # Database setup
-db = pymysql.connect("localhost","mark","mark123","floodytech")
-cur = db.cursor()
+#db = pymysql.connect("localhost","mark","mark123","floodytech")
+#cur = db.cursor()
 
 # Fingerprint scanner setup
 uart = serial.Serial(serial_port[0].device, baudrate=57600, timeout=1)
@@ -134,14 +137,13 @@ def get_fingerprint():
         return False
     print("Searching...")
     if finger.finger_fast_search() != adafruit_fingerprint.OK:
-        #seconds = round(count.finish())
-        #print("You took {} seconds between Enter actions".format(seconds))
         return False
     return True
 
 def bg_loop():
     global j
-    while True:
+    global stop_run
+    while not stop_run:
         GPIO.cleanup()
         if get_fingerprint():
             print("Detected #", finger.finger_id, "with confidence", finger.confidence)
@@ -175,7 +177,40 @@ def bg_loop():
             lcd_string("not found!", 3)
             sleep(2) 
 
-# Flask routes         
+def manual_run():
+    t = Thread(target=bg_loop)
+    t.start()
+    return("Processing")
+
+# Flask routes
+
+@app.route("/stop", methods=['GET'])
+def set_stop_run():
+    global stop_run
+    stop_run = True
+    return "Application stopped"
+
+@app.route("/run", methods=['GET'])
+def run_process():
+    global stop_run
+    stop_run = False
+    return Response(manual_run(), mimetype="text/html")
+
+@app.route('/add_finger')
+def add_finger():
+    return("Nothing")
+
+
+@app.route('/del_finger')
+def del_finger():
+    print("Please enter the fingerprint to be deleted")
+    if get_fingerprint():
+        finger.delete_model(finger.finger_id)
+        print("Deleted")
+    else:
+        print("Failed to delete")
+    return("Nothing")
+
 
 @app.route('/capture_image')
 def capture_data():
@@ -187,7 +222,7 @@ def capture_data():
     print(i)    
     i = i + 1
     #print("Capturing Image")
-    camera.capture('/home/pi/Desktop/connect-tech/images/image_%s.jpg' % i)
+    camera.capture('/var/www/html/images_cap/image_%s.jpg' % i)
     #print("Saving Stream")
     #camera.start_recording('/home/pi/Desktop/connect-tech/videos/video_%s.h264' % i)
     #sleep(5)
@@ -235,7 +270,7 @@ def index_page():
 
 # run the application
 if __name__ == "__main__":
-    p = Process(target=bg_loop)
-    p.start()
+    #p = Process(target=bg_loop)
+    #p.start()
     app.run(debug=True, port=9977, host='0.0.0.0', threaded=True, use_reloader=False)      
-    p.join()  
+    #p.join()  

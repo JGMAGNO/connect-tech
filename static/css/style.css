@@ -120,7 +120,7 @@ footer.page-footer {
 }
 
 
-button {
+button.camera {
   width: 76px;
   height: 76px;
   margin-left: 40px;
@@ -134,20 +134,76 @@ button {
   text-decoration: none;
 }
 
-button i {
+button.camera i {
   color: #2a2b2c;
   opacity: 0.2;
 }
 
-button:hover{
+button.camera:hover{
   cursor: pointer;
   background-color: #00dc00;
 }
 
-button:active{
+button.camera:active{
   background: #00dc00;  
 }
 
 img{
   width:200px;
+}
+
+button.f-add {
+  width: 76px;
+  height: 76px;
+  margin-left: 40px;
+  padding: 0px 0px 0px 0px;
+  font-family: sans-serif;
+  font-size: 30px;
+  border-radius: 50%;
+  border: none;
+  background-color: #ddddde;
+  margin-top: 50px;
+  text-decoration: none;
+}
+
+button.f-add i {
+  color: #2a2b2c;
+  opacity: 0.2;
+}
+
+button.f-add:hover{
+  cursor: pointer;
+  background-color: #00dc00;
+}
+
+button.f-add:active{
+  background: #00dc00;  
+}
+
+button.f-del {
+  width: 76px;
+  height: 76px;
+  margin-left: 40px;
+  padding: 0px 0px 0px 0px;
+  font-family: sans-serif;
+  font-size: 30px;
+  border-radius: 50%;
+  border: none;
+  background-color: #ddddde;
+  margin-top: 50px;
+  text-decoration: none;
+}
+
+button.f-del i {
+  color: #2a2b2c;
+  opacity: 0.2;
+}
+
+button.f-del:hover{
+  cursor: pointer;
+  background-color: #00dc00;
+}
+
+button.f-del:active{
+  background: #00dc00;  
 }
