@@ -22,6 +22,7 @@ app = Flask(__name__)
 
 stop_run = False
 stop_threads = False
+set_text_new = False
 # Digital pin for the relay
 channel = 21
 
@@ -30,6 +31,8 @@ i = 0
 
 # Variable for sms alert counter
 j = 0
+
+f_number = 0
 
 # Piece of code for identifying usb serial
 serial_port = list(serial.tools.list_ports.comports())
@@ -50,6 +53,7 @@ finger = adafruit_fingerprint.Adafruit_Fingerprint(uart)
 sim800l = SIM800L('/dev/serial0')
 sms_message = "Someone is trying to unlock the door"
 dest="639569731165"
+
 
 # Functions
 
@@ -196,8 +200,13 @@ def get_fingerprint():
     sleep(1)
     lcd_clear()
     lcd_string("Waiting", 2) 
-    lcd_string("for image...", 3)     
+    lcd_string("for image...a", 3)     
     print("Waiting for image...")
+    if set_text_new:
+        lcd_clear()
+        lcd_string("Please scan the", 2)
+        lcd_string("fingerprint that", 3)
+        lcd_string("you wish to delete", 4)
     while finger.get_image() != adafruit_fingerprint.OK:
         global stop_threads
         if stop_threads:
@@ -218,7 +227,9 @@ def bg_loop():
     while not stop_run:
         GPIO.cleanup()
         if get_fingerprint():
-            print("Detected #", finger.finger_id, "with confidence", finger.confidence)
+            print("Detected #", finger.finger_id, "with confidence", finger.confidence, " ", finger.templates)
+            global f_number
+            f_number = len(finger.templates)
             lcd_clear()
             lcd_string("Fingerprint", 2)
             lcd_string("found!", 3)
@@ -260,27 +271,35 @@ def manual_run():
 def set_stop_run():
     global stop_run
     global stop_threads
+    global set_text_new
     stop_run = True
     stop_threads = True
+    set_text_new = False
     return "Application stopped"
 
 @app.route("/run", methods=['GET'])
 def run_process():
     global stop_run
     global stop_threads
+    global set_text_new
     stop_run = False
     stop_threads = False
+    set_text_new = False
     return Response(manual_run(), mimetype="text/html")
 
 @app.route('/add_finger')
 def add_finger():
     #enroll_finger(len(finger.templates) + 1)
-    print(len(finger.templates))
+    print(f_number)
     return("Nothing")
 
 
 @app.route('/del_finger')
 def del_finger():
+    global stop_threads
+    global set_text_new
+    stop_threads = False
+    set_text_new = True
     print(len(finger.templates))
     print("Please enter the fingerprint to be deleted")
     if get_fingerprint():
@@ -298,7 +317,7 @@ def capture_data():
     camera.resolution = (640,480)
     camera.framerate = 24    
     global i
-    print(i)    
+    #print(i)    
     i = i + 1
     #print("Capturing Image")
     camera.capture('/var/www/html/images_cap/image_%s.jpg' % i)
