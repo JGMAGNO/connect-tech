@@ -155,7 +155,17 @@
     });   
 
     $('.f-del').on('click', function() {
+        setTimeout(function(){ $("button.f-del").css("background","#00dc00"); }, 0);
+        setTimeout(function(){ $("button.f-del").css("background","#ddddde"); }, 400);      
         $.getJSON('/del_finger',
+            function(data) {});
+        M.toast({html: 'Cellphone number has been set.'})        
+    });     
+
+    $('.f-add').on('click', function() {
+        setTimeout(function(){ $("button.f-add").css("background","#00dc00"); }, 0);
+        setTimeout(function(){ $("button.f-add").css("background","#ddddde"); }, 400);      
+        $.getJSON('/add_finger',
             function(data) {});
         M.toast({html: 'Cellphone number has been set.'})        
     });     
