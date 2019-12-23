@@ -17,6 +17,7 @@ from multiprocessing import Process, Value
 from flask_cors import CORS
 from threading import Thread
 
+
 # creates a Flask application, named app
 app = Flask(__name__)
 CORS(app)
@@ -320,6 +321,7 @@ def run_process():
     global stop_run
     global stop_threads
     global set_text_del
+    global set_text_add
     stop_run = False
     stop_threads = False
     set_text_del = False
@@ -332,6 +334,7 @@ def add_finger():
     sleep(1)
     global stop_threads
     global set_text_del
+    global set_text_add
     stop_threads = False
     set_text_del = False
     set_text_add = True
@@ -349,6 +352,7 @@ def del_finger():
     sleep(1)
     global stop_threads
     global set_text_del
+    global set_text_add
     stop_threads = False
     set_text_del = True
     set_text_add = False
