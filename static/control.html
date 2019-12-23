@@ -172,7 +172,7 @@
 
     $("button.camera").click(function (e){
         setTimeout(function(){ $("button.camera").css("background","#00dc00"); }, 0);
-        setTimeout(function(){ $("button.camera").css("background","#ddddde"); }, 400);
+        setTimeout(function(){ $("button.camera").css("background","#ddddde"); }, 1000);
         var toastHTML = '<span>Captured!</span><a href="/static/gallery.html" class="btn-flat toast-action">View</a>';
         M.toast({html: toastHTML});        
         $.getJSON('/capture_image',

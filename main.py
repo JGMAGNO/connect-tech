@@ -19,10 +19,12 @@ from threading import Thread
 
 # creates a Flask application, named app
 app = Flask(__name__)
+CORS(app)
 
 stop_run = False
 stop_threads = False
-set_text_new = False
+set_text_del = False
+set_text_add = False
 # Digital pin for the relay
 channel = 21
 
@@ -123,37 +125,56 @@ def enroll_finger(location):
     """Take a 2 finger images and template it, then store in 'location'"""
     for fingerimg in range(1, 3):
         if fingerimg == 1:
-            print("Place finger on sensor...", end="", flush=True)
+            #print("Place finger on sensor...", end="", flush=True)
+            lcd_clear()
+            lcd_string("Place finger", 1)
+            lcd_string("on sensor", 2)
         else:
-            print("Place same finger again...", end="", flush=True)
+            #print("Place same finger again...", end="", flush=True)
+            lcd_clear()
+            lcd_string("Place same", 1)
+            lcd_string("finger again", 2)
 
         while True:
             i = finger.get_image()
             if i == adafruit_fingerprint.OK:
-                print("Image taken")
+                #print("Image taken")
+                
+                lcd_string("Image taken!", 4)
                 break
             elif i == adafruit_fingerprint.NOFINGER:
-                print(".", end="", flush=True)
+                #print(".", end="", flush=True)
+                print("")
             elif i == adafruit_fingerprint.IMAGEFAIL:
-                print("Imaging error")
+                #print("Imaging error")
+                lcd_string("Imaging Error!", 4)
                 return False
             else:
-                print("Other error")
+                #print("Other error")
+                lcd_string("Other error!", 4)
                 return False
 
-        print("Templating...", end="", flush=True)
+        #print("Templating...", end="", flush=True)
+        lcd_clear()
+        lcd_string("Templating...", 1)
         i = finger.image_2_tz(fingerimg)
         if i == adafruit_fingerprint.OK:
-            print("Templated")
+            #print("Templated")
+            lcd_string("Templated", 3)
         else:
             if i == adafruit_fingerprint.IMAGEMESS:
-                print("Image too messy")
+                #print("Image too messy")
+                lcd_string("Image too messy", 3)
             elif i == adafruit_fingerprint.FEATUREFAIL:
-                print("Could not identify features")
+                #print("Could not identify features")
+                lcd_string("Could not", 3)
+                lcd_string("identify features", 4)
             elif i == adafruit_fingerprint.INVALIDIMAGE:
-                print("Image invalid")
+                #print("Image invalid")
+                lcd_string("Image invalid", 3)
             else:
-                print("Other error")
+                #print("Other error")
+                lcd_string("Other error", 3)
             return False
 
         if fingerimg == 1:
@@ -162,28 +183,38 @@ def enroll_finger(location):
             while i != adafruit_fingerprint.NOFINGER:
                 i = finger.get_image()
 
-    print("Creating model...", end="", flush=True)
+    #print("Creating model...", end="", flush=True)
+    lcd_clear()
+    lcd_string("Creating model...", 1)    
     i = finger.create_model()
     if i == adafruit_fingerprint.OK:
-        print("Created")
+        #print("Created")
+        lcd_string("Created", 2)
     else:
         if i == adafruit_fingerprint.ENROLLMISMATCH:
-            print("Prints did not match")
+            #print("Prints did not match")
+            lcd_string("Prints did not match", 2)
         else:
-            print("Other error")
+            #print("Other error")
+            lcd_string("Other error", 2)
         return False
 
-    print("Storing model #%d..." % location, end="", flush=True)
+    #print("Storing model #%d..." % location, end="", flush=True)
+    lcd_string("Storing model...", 3)
     i = finger.store_model(location)
     if i == adafruit_fingerprint.OK:
-        print("Stored")
+        #print("Stored")
+        lcd_string("Stored", 4)
     else:
         if i == adafruit_fingerprint.BADLOCATION:
-            print("Bad storage location")
+            #print("Bad storage location")
+            lcd_string("Bad storage location", 4)
         elif i == adafruit_fingerprint.FLASHERR:
-            print("Flash storage error")
+            #print("Flash storage error")
+            lcd_string("Flash storage error", 4)
         else:
-            print("Other error")
+            #print("Other error")
+            lcd_string("Other error", 4)
         return False
 
     return True
@@ -200,13 +231,18 @@ def get_fingerprint():
     sleep(1)
     lcd_clear()
     lcd_string("Waiting", 2) 
-    lcd_string("for image...a", 3)     
+    lcd_string("for image...", 3)     
     print("Waiting for image...")
-    if set_text_new:
+    if set_text_del:
         lcd_clear()
         lcd_string("Please scan the", 2)
         lcd_string("fingerprint that", 3)
         lcd_string("you wish to delete", 4)
+    if set_text_add:
+        lcd_clear()
+        lcd_string("Please scan the", 2)
+        lcd_string("fingerprint that", 3)
+        lcd_string("you wish to add", 4)
     while finger.get_image() != adafruit_fingerprint.OK:
         global stop_threads
         if stop_threads:
@@ -271,42 +307,60 @@ def manual_run():
 def set_stop_run():
     global stop_run
     global stop_threads
-    global set_text_new
+    global set_text_del
+    global set_text_add
     stop_run = True
     stop_threads = True
-    set_text_new = False
+    set_text_del = False
+    set_text_add = False
     return "Application stopped"
 
 @app.route("/run", methods=['GET'])
 def run_process():
     global stop_run
     global stop_threads
-    global set_text_new
+    global set_text_del
     stop_run = False
     stop_threads = False
-    set_text_new = False
+    set_text_del = False
+    set_text_add = False
     return Response(manual_run(), mimetype="text/html")
 
 @app.route('/add_finger')
 def add_finger():
-    #enroll_finger(len(finger.templates) + 1)
-    print(f_number)
+    set_stop_run()
+    sleep(1)
+    global stop_threads
+    global set_text_del
+    stop_threads = False
+    set_text_del = False
+    set_text_add = True
+    print("Please scan the fingerprint to be add")
+    enroll_finger(len(finger.templates) + 21)
+    print("Fingerprint Added")
+    sleep(1)
+    run_process() 
     return("Nothing")
 
 
 @app.route('/del_finger')
 def del_finger():
+    set_stop_run()
+    sleep(1)
     global stop_threads
-    global set_text_new
+    global set_text_del
     stop_threads = False
-    set_text_new = True
-    print(len(finger.templates))
+    set_text_del = True
+    set_text_add = False
+    #print(len(finger.templates))
     print("Please enter the fingerprint to be deleted")
     if get_fingerprint():
         finger.delete_model(finger.finger_id)
         print("Deleted")
     else:
         print("Failed to delete")
+    sleep(1)
+    run_process()
     return("Nothing")
 
 
@@ -331,6 +385,14 @@ def capture_data():
     #readBLOB(i, '/home/pi/Desktop/connect-tech/output/images/image_%s.jpg' % i, '/home/pi/Desktop/connect-tech/output/videos/video_%s.h264' % i)
     #sleep(1)
     camera.close()
+    return("Nothing")
+
+@app.route('/start_stream')
+def start_stream():
+    return("Nothing")
+
+@app.route('/stop_stream')
+def stop_stream():
     return("Nothing")
 
 @app.route('/lock')
