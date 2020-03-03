@@ -46,6 +46,20 @@
 	background-position : center center;
 }
 
+.btn_f_cancel {
+    background-image: url('../img/cancel.png');
+    background-repeat:no-repeat;
+    background-position : center center;
+}
+
+
+.btn_f_restart {
+    background-image: url('../img/restart.png');
+    background-repeat:no-repeat;
+    background-position : center center;
+}
+
+
 .form-group {
     margin-bottom: 1rem;
     text-align: center;

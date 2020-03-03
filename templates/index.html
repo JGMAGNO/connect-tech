@@ -27,10 +27,14 @@
     <div class="col text-right"><button class="btn btn-b camera"><i class="fa fa-camera fa-2x"></i></button></div>
     <div class="col text-left"><button class="btn btn-b lock"><i class="fa fa-lock fa-2x"></i></button></div>
   </div>
-  <div class="row" style="padding-top: 25px;">
+  <div class="row" style="padding-top: 20px;">
     <div class="col text-right"><button class="btn btn-b btn_f_add"></button></div>
     <div class="col text-left"><button class="btn btn-b btn_f_delete"></button></div>
   </div>
+  <div class="row" style="padding-top: 20px;">
+    <div class="col text-right"><button class="btn btn-b btn_f_cancel"></button></div>
+    <div class="col text-left"><button class="btn btn-b btn_f_restart"></button></div>
+  </div>  
   <div class="row" style="padding-top: 30px;">
   	 <div class="col-sm">
 	  <div class="form-group custom1">
@@ -89,6 +93,11 @@
 		    icon.classList.add('fa-unlock');
             $.getJSON('/unlock',
                 function(data) {});   
+            setTimeout(function(){ 
+			    icon.classList.remove('fa-unlock');
+			    icon.classList.add('fa-lock');
+            	$.getJSON('/lock', function(data) {});
+            }, 6000); 
 		  } else {
 		    icon.classList.remove('fa-unlock');
 		    icon.classList.add('fa-lock');
@@ -118,6 +127,22 @@
 
 	    $('.btn_f_add').on('click', function() {    
 	        $.getJSON('/add_finger',
+	            function(data) {});      
+	    });  
+
+	    $('.btn_f_cancel').on('click', function() {    
+	        $.getJSON('/stop',
+	            function(data) {});      
+	    });  
+
+
+	    $('.btn_f_scan').on('click', function() {    
+	        $.getJSON('/run',
+	            function(data) {});      
+	    });  
+
+	    $('.btn_f_restart').on('click', function() {    
+	        $.getJSON('/restart',
 	            function(data) {});      
 	    });  
 

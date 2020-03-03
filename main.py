@@ -29,9 +29,13 @@ client = Client(account_sid, auth_token)
 
 body = "Someone is forcing to open the door"
 from_ = '+15109240286'
-to_ = '+639267322931' # please change this when changing phone number on twilio dashboard
+to_ = '+639267322931' 
+
+# please change this when changing phone number on twilio dashboard
+# the to_ variable should match the number of the recipient on the twilio dashboard
 
 folder = '/var/www/html/images_cap/images'
+# clears the folder for every program execution
 for filename in os.listdir(folder):
     file_path = os.path.join(folder, filename)
     try:
@@ -146,12 +150,10 @@ def enroll_finger(location):
     """Take a 2 finger images and template it, then store in 'location'"""
     for fingerimg in range(1, 3):
         if fingerimg == 1:
-            #print("Place finger on sensor...", end="", flush=True)
             lcd_clear()
             lcd_string("Place finger", 1)
             lcd_string("on sensor", 2)
         else:
-            #print("Place same finger again...", end="", flush=True)
             lcd_clear()
             lcd_string("Place same", 1)
             lcd_string("finger again", 2)
@@ -159,42 +161,31 @@ def enroll_finger(location):
         while True:
             i = finger.get_image()
             if i == adafruit_fingerprint.OK:
-                #print("Image taken")
-                
                 lcd_string("Image taken!", 4)
                 break
             elif i == adafruit_fingerprint.NOFINGER:
-                #print(".", end="", flush=True)
                 print("")
             elif i == adafruit_fingerprint.IMAGEFAIL:
-                #print("Imaging error")
                 lcd_string("Imaging Error!", 4)
                 return False
             else:
-                #print("Other error")
                 lcd_string("Other error!", 4)
                 return False
 
-        #print("Templating...", end="", flush=True)
         lcd_clear()
         lcd_string("Templating...", 1)
         i = finger.image_2_tz(fingerimg)
         if i == adafruit_fingerprint.OK:
-            #print("Templated")
             lcd_string("Templated", 3)
         else:
             if i == adafruit_fingerprint.IMAGEMESS:
-                #print("Image too messy")
                 lcd_string("Image too messy", 3)
             elif i == adafruit_fingerprint.FEATUREFAIL:
-                #print("Could not identify features")
                 lcd_string("Could not", 3)
                 lcd_string("identify features", 4)
             elif i == adafruit_fingerprint.INVALIDIMAGE:
-                #print("Image invalid")
                 lcd_string("Image invalid", 3)
             else:
-                #print("Other error")
                 lcd_string("Other error", 3)
             return False
 
@@ -204,37 +195,28 @@ def enroll_finger(location):
             while i != adafruit_fingerprint.NOFINGER:
                 i = finger.get_image()
 
-    #print("Creating model...", end="", flush=True)
     lcd_clear()
     lcd_string("Creating model...", 1)    
     i = finger.create_model()
     if i == adafruit_fingerprint.OK:
-        #print("Created")
         lcd_string("Created", 2)
     else:
         if i == adafruit_fingerprint.ENROLLMISMATCH:
-            #print("Prints did not match")
             lcd_string("Prints did not match", 2)
         else:
-            #print("Other error")
             lcd_string("Other error", 2)
         return False
 
-    #print("Storing model #%d..." % location, end="", flush=True)
     lcd_string("Storing model...", 3)
     i = finger.store_model(location)
     if i == adafruit_fingerprint.OK:
-        #print("Stored")
         lcd_string("Stored", 4)
     else:
         if i == adafruit_fingerprint.BADLOCATION:
-            #print("Bad storage location")
             lcd_string("Bad storage location", 4)
         elif i == adafruit_fingerprint.FLASHERR:
-            #print("Flash storage error")
             lcd_string("Flash storage error", 4)
         else:
-            #print("Other error")
             lcd_string("Other error", 4)
         return False
 
@@ -296,7 +278,6 @@ def bg_loop():
             if j == 3:
                 print("Overflow")
                 # send an sms
-                #sim800l.send_sms(dest,sms)
                 message = client.messages \
                                 .create(body=body,from_=from_,to=to_)
                 lcd_clear()
@@ -330,6 +311,11 @@ def set_stop_run():
     set_text_del = False
     set_text_add = False
     return "Application stopped"
+
+@app.route("/restart", methods=['GET'])
+def restart_p():
+    manual_run()
+    return "Application restarted"
 
 @app.route("/run", methods=['GET'])
 def run_process():
@@ -378,7 +364,6 @@ def del_finger():
     stop_threads = False
     set_text_del = True
     set_text_add = False
-    #print(len(finger.templates))
     print("Please enter the fingerprint to be deleted")
     if get_fingerprint():
         finger.delete_model(finger.finger_id)
@@ -399,7 +384,7 @@ def capture_data():
     
     global i
     global timestr
-    timestr = time.strftime("%b %d, %Y %H:%M %p ")   
+    timestr = time.strftime("%B %d, %Y %H:%M %p ")   
     #print(i)    
     i = i + 1
     #print("Capturing Image")
@@ -432,7 +417,6 @@ def d_lock():
     GPIO.cleanup()
     lcd_clear()
     lcd_string("Locked!", 2)
-    #emit('update value')
     return("Nothing")
 
 @app.route('/unlock')
@@ -457,7 +441,8 @@ def set_cp(name):
 
 @app.route("/", methods=['GET'])
 def index_page():
-    #return redirect("static/control.html", code=302)
+    set_stop_run()
+    sleep(3)
     run_process()
     return render_template('index.html')
 
