@@ -7,16 +7,40 @@ import pymysql
 import serial
 import serial.tools.list_ports
 import adafruit_fingerprint
+import os
+import shutil
 
 from time import sleep
 from picamera import PiCamera
 from sim800l import SIM800L
-from flask import Flask, Response
+from flask import Flask, Response, redirect
 from flask import render_template
 from multiprocessing import Process, Value
 from flask_cors import CORS
 from threading import Thread
+from flask_socketio import SocketIO, emit
+from twilio.rest import Client
 
+
+account_sid = 'AC843d0bf8d98cb4c7164c8c1c8816b852'
+auth_token = '46a5d14756c8e1c01a25feb773a6d71b'
+
+client = Client(account_sid, auth_token)
+
+body = "Someone is forcing to open the door"
+from_ = '+15109240286'
+to_ = '+639267322931' # please change this when changing phone number on twilio dashboard
+
+folder = '/var/www/html/images_cap/images'
+for filename in os.listdir(folder):
+    file_path = os.path.join(folder, filename)
+    try:
+        if os.path.isfile(file_path) or os.path.islink(file_path):
+            os.unlink(file_path)
+        elif os.path.isdir(file_path):
+            shutil.rmtree(file_path)
+    except Exception as e:
+        print('Failed to delete %s. Reason: %s' % (file_path, e))
 
 # creates a Flask application, named app
 app = Flask(__name__)
@@ -45,7 +69,7 @@ lcd = lcddriver.lcd()
 lcd.lcd_clear()
 
 # Database setup
-#db = pymysql.connect("localhost","mark","mark123","floodytech")
+#db = pymysql.connect("","","","")
 #cur = db.cursor()
 
 # Fingerprint scanner setup
@@ -53,10 +77,6 @@ uart = serial.Serial(serial_port[0].device, baudrate=57600, timeout=1)
 finger = adafruit_fingerprint.Adafruit_Fingerprint(uart)
 
 # GSM Module setup
-sim800l = SIM800L('/dev/serial0')
-sms_message = "Someone is trying to unlock the door"
-dest="639569731165"
-
 
 # Functions
 
@@ -224,15 +244,7 @@ def get_fingerprint():
     capture_data()
     lcd_clear()
     lcd_string("Waiting", 2) 
-    lcd_string("for image.", 3) 
-    sleep(1)
-    lcd_clear()
-    lcd_string("Waiting", 2) 
-    lcd_string("for image..", 3) 
-    sleep(1)
-    lcd_clear()
-    lcd_string("Waiting", 2) 
-    lcd_string("for image...", 3)     
+    lcd_string("for image.", 3)     
     print("Waiting for image...")
     if set_text_del:
         lcd_clear()
@@ -263,10 +275,11 @@ def bg_loop():
     global stop_run
     while not stop_run:
         GPIO.cleanup()
+        if finger.read_templates() != adafruit_fingerprint.OK:
+            raise RuntimeError('Failed to read templates')  
+        print("Fingerprint templates:", len(finger.templates))
         if get_fingerprint():
             print("Detected #", finger.finger_id, "with confidence", finger.confidence, " ", finger.templates)
-            global f_number
-            f_number = len(finger.templates)
             lcd_clear()
             lcd_string("Fingerprint", 2)
             lcd_string("found!", 3)
@@ -284,6 +297,8 @@ def bg_loop():
                 print("Overflow")
                 # send an sms
                 #sim800l.send_sms(dest,sms)
+                message = client.messages \
+                                .create(body=body,from_=from_,to=to_)
                 lcd_clear()
                 lcd_string("Alerting", 2)
                 lcd_string("the owner!", 3)
@@ -335,11 +350,18 @@ def add_finger():
     global stop_threads
     global set_text_del
     global set_text_add
+    global f_number
     stop_threads = False
     set_text_del = False
     set_text_add = True
+    if finger.read_templates() != adafruit_fingerprint.OK:
+            raise RuntimeError('Failed to read templates')
+    global f_number
+    f_number = len(finger.templates)
+    print("number: ",f_number)    
     print("Please scan the fingerprint to be add")
-    enroll_finger(len(finger.templates) + 21)
+    print("Number of current enrolled: ",f_number)
+    enroll_finger(f_number + 1)
     print("Fingerprint Added")
     sleep(1)
     run_process() 
@@ -371,14 +393,17 @@ def del_finger():
 @app.route('/capture_image')
 def capture_data():
     camera = PiCamera()
-    camera.rotation = 180
+    camera.rotation = 45
     camera.resolution = (640,480)
-    camera.framerate = 24    
+    camera.framerate = 24 
+    
     global i
+    global timestr
+    timestr = time.strftime("%b %d, %Y %H:%M %p ")   
     #print(i)    
     i = i + 1
     #print("Capturing Image")
-    camera.capture('/var/www/html/images_cap/image_%s.jpg' % i)
+    camera.capture('/var/www/html/images_cap/images/%s image_%d.jpg' % (timestr, i)) 
     #print("Saving Stream")
     #camera.start_recording('/home/pi/Desktop/connect-tech/videos/video_%s.h264' % i)
     #sleep(5)
@@ -407,6 +432,7 @@ def d_lock():
     GPIO.cleanup()
     lcd_clear()
     lcd_string("Locked!", 2)
+    #emit('update value')
     return("Nothing")
 
 @app.route('/unlock')
@@ -420,21 +446,25 @@ def d_unlock():
 
 @app.route('/returncp')
 def return_cp():
-    return dest
+    return to_[1:]
 
 @app.route('/setcp/<name>')
 def set_cp(name):
-    global dest
-    dest = name
-    return dest
+    print(name)
+    global to_
+    to_ = name
+    return to_
 
-@app.route("/")
+@app.route("/", methods=['GET'])
 def index_page():
+    #return redirect("static/control.html", code=302)
+    run_process()
     return render_template('index.html')
 
 # run the application
 if __name__ == "__main__":
     #p = Process(target=bg_loop)
     #p.start()
-    app.run(debug=True, port=9977, host='0.0.0.0', threaded=True, use_reloader=False)      
+    app.run(debug=True, port=81, host='0.0.0.0', threaded=True, use_reloader=False)   
+    #socketio.run(app)   
     #p.join()  
